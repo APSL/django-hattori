@@ -2,7 +2,7 @@
 from django.core.management import BaseCommand
 
 from hattori import constants
-from hattori.base import ANONYMIZER_MODULE_NAME
+from hattori.constants import ANONYMIZER_MODULE_NAME
 from hattori.exceptions import HattoriException
 from hattori.utils import setting, autodiscover_module, get_app_anonymizers
 
@@ -32,7 +32,7 @@ class Command(BaseCommand):
             "-b",
             "--batch-size",
             dest="batch_size",
-            help="batch size used in the bulk_update of the instances. Depends on the DB machine. Use 500 in vagrant.",
+            help="batch size used in the bulk_update of the instances. Depends on the DB machine, defaults use 500.",
             metavar="BATCH_SIZE",
             type=int,
             default=constants.DEFAULT_CHUNK_SIZE,
