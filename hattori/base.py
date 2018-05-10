@@ -5,10 +5,6 @@ from six import string_types
 from django.conf import settings
 from bulk_update.helper import bulk_update
 from faker import Faker
-from multiprocessing import Pool
-
-ANONYMIZER_MODULE_NAME = 'anonymizers'
-DEFAULT_CHUNK_SIZE = 50
 
 logger = logging.getLogger(__name__)
 
@@ -59,30 +55,10 @@ class BaseAnonymizer:
             count_instances += 1
         return instances, count_instances, count_fields
 
-    def _run_parallel(self, instances, parallel_processes):
-        count_instances = 0
-        count_fields = 0
-        instances_processed = []
-        chunks = [instances[i:i + DEFAULT_CHUNK_SIZE] for i in range(0, len(instances), DEFAULT_CHUNK_SIZE)]
-        pool = Pool(processes=parallel_processes)
-        futures = [pool.apply_async(self._process_instances, (objs,)) for objs in chunks]
-        for future in futures:
-            instances_parallel, count_instances_parallel, count_fields_parallel = future.get()
-            instances_processed += instances_parallel
-            count_instances += count_instances_parallel
-            count_fields += count_fields_parallel
-        pool.close()
-        pool.join()
-        return instances_processed, count_instances, count_fields
-
-    def run(self, batch_size=None, parallel_processes=0):
+    def run(self, batch_size):
         instances = self.get_query_set()
-        batch_size = DEFAULT_CHUNK_SIZE if batch_size is None else int(batch_size)
 
-        if parallel_processes > 1:
-            instances_processed, count_instances, count_fields = self._run_parallel(instances, parallel_processes)
-        else:
-            instances_processed, count_instances, count_fields = self._process_instances(instances)
+        instances_processed, count_instances, count_fields = self._process_instances(instances)
 
         bulk_update(instances_processed, update_fields=[attrs[0] for attrs in self.attributes],
                     batch_size=batch_size)
