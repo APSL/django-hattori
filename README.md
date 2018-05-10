@@ -19,6 +19,13 @@ INSTALLED_APPS = [
 ]
 ```
 
+### Important
+
+***You should only run the anonymize process in PRE or development environments***. To avoid problems by default anonymization is disabled.
+
+To enable you must add to settings ```ANONYMIZE_ENABLED=True```
+
+
 ## Usage
 
 How to execute command:
