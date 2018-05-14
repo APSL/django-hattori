@@ -1,6 +1,8 @@
 # Django-Hattori
 
-Command to anonymize sensitive data
+Command to anonymize sensitive data. This app helps you anonymize data in a database used for development of a Django project.
+
+This app is based on [Django-Database-Anonymizer](https://github.com/Blueshoe/Django-Database-Anonymizer), using [Faker](https://github.com/joke2k/faker) to anonymize the values.
 
 ## Installation
 
