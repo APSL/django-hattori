@@ -36,10 +36,10 @@ def get_email(package):
 
 def get_long_description():
     """
-    return the long description from README.rst file
+    return the long description from README.md file
     :return:
     """
-    return codecs.open(os.path.join(os.path.dirname(__file__), 'README.rst'), encoding='utf-8').read()
+    return codecs.open(os.path.join(os.path.dirname(__file__), 'README.md'), encoding='utf-8').read()
 
 
 setup(
