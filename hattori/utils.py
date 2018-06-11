@@ -39,11 +39,11 @@ def autodiscover_module(module_name, app_name=None):
     for app in apps_to_search:
         try:
             import_module(app)
-        except ModuleNotFoundError as e:
+        except ImportError as e:
             raise HattoriException('ERROR: Can not find app {}'.format(app), e)
         try:
             modules.append(import_module('%s.%s' % (app, module_name)))
-        except ModuleNotFoundError as e:
+        except ImportError as e:
             if app_name:
                 raise HattoriException('ERROR: Can not find module {}'.format(module_name, app), e)
     logger.info('Found anonymizers for {} apps'.format(len(modules)))
