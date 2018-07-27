@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
+from tqdm import tqdm
 from six import string_types
 from django.conf import settings
 from bulk_update.helper import bulk_update
@@ -42,6 +43,7 @@ class BaseAnonymizer:
         count_fields = 0
         count_instances = 0
 
+        progress_bar = tqdm(desc="Processing", total=instances.count())
         for model_instance in instances:
             for field_name, replacer in self.attributes:
                 if callable(replacer):
@@ -53,6 +55,8 @@ class BaseAnonymizer:
                 setattr(model_instance, field_name, replaced_value)
                 count_fields += 1
             count_instances += 1
+            progress_bar.update(1)
+        progress_bar.close()
         return instances, count_instances, count_fields
 
     def run(self, batch_size):

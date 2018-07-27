@@ -12,3 +12,10 @@ Change log
 ------------------
 
 * ModuleNotFoundError is a new exception in Python 3.6, whereas earlier versions use ImportError.
+
+
+0.1.2 (2018-07-27)
+------------------
+
+* Add progress bar that indicates the progress of the anonymization operation.
+
