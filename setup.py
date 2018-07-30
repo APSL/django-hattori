@@ -56,6 +56,7 @@ setup(
         'django-bulk-update>=2.2.0',
         'Faker>=0.8.13',
         'six',
+        'tqdm>=4.23.4',
     ],
     classifiers=[
         'Environment :: Web Environment',

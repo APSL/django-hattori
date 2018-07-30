@@ -60,8 +60,8 @@ class Command(BaseCommand):
             for anonymizer_class_name in anonymizers:
                 anonymizer = getattr(module, anonymizer_class_name)()
                 # Start the anonymizing process
-                number_of_replaced_fields = anonymizer.run(options.get('batch_size'))
                 self.stdout.write('{}.{}:'.format(module.__package__, anonymizer.model.__name__))
+                number_of_replaced_fields = anonymizer.run(options.get('batch_size'))
                 self.stdout.write('- {} fields, {} model instances, {} total replacements'.format(
                     number_of_replaced_fields[0],
                     number_of_replaced_fields[1],
