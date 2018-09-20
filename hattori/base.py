@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+
 import logging
+import concurrent.futures
 
 from tqdm import tqdm
 from six import string_types
@@ -39,32 +41,45 @@ class BaseAnonymizer:
             retval = retval[:max_length]
         return retval
 
-    def _process_instances(self, instances):
+    def _process_instances(self, instances, max_workers):
         count_fields = 0
         count_instances = 0
-
+        errors = 0
         progress_bar = tqdm(desc="Processing", total=instances.count())
-        for model_instance in instances:
-            for field_name, replacer in self.attributes:
-                if callable(replacer):
-                    replaced_value = self.get_allowed_value(replacer, model_instance, field_name)
-                elif isinstance(replacer, string_types):
-                    replaced_value = replacer
-                else:
-                    raise TypeError('Replacers need to be callables or Strings!')
-                setattr(model_instance, field_name, replaced_value)
-                count_fields += 1
-            count_instances += 1
+        # enqueuing instances
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_ref = {
+                executor.submit(self._process_instance, instance): instance for instance in instances
+            }
+        # processing results
+        for future in concurrent.futures.as_completed(future_ref):
+            # item_processed = future_ref[future]
+            try:
+                data_result = future.result()
+            except Exception as exc:
+                errors += 1
+            else:
+                count_fields += data_result
+                count_instances += 1
             progress_bar.update(1)
         progress_bar.close()
         return instances, count_instances, count_fields
 
-    def run(self, batch_size):
+    def _process_instance(self, model_instance):
+        count_fields = 0
+        for field_name, replacer in self.attributes:
+            if callable(replacer):
+                replaced_value = self.get_allowed_value(replacer, model_instance, field_name)
+            elif isinstance(replacer, string_types):
+                replaced_value = replacer
+            else:
+                raise TypeError('Replacers need to be callables or Strings!')
+            setattr(model_instance, field_name, replaced_value)
+            count_fields += 1
+        return count_fields
+
+    def run(self, batch_size, max_workers):
         instances = self.get_query_set()
-
-        instances_processed, count_instances, count_fields = self._process_instances(instances)
-
-        bulk_update(instances_processed, update_fields=[attrs[0] for attrs in self.attributes],
-                    batch_size=batch_size)
-
+        instances_processed, count_instances, count_fields = self._process_instances(instances, max_workers)
+        bulk_update(instances_processed, update_fields=[attrs[0] for attrs in self.attributes], batch_size=batch_size)
         return len(self.attributes), count_instances, count_fields
