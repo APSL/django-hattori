@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-
 from django.core.management import BaseCommand
 
 from hattori import constants
+from hattori.constants import ANONYMIZER_MODULE_NAME
 from hattori.exceptions import HattoriException
 from hattori.utils import setting, autodiscover_module, get_app_anonymizers
 
@@ -38,30 +38,22 @@ class Command(BaseCommand):
             default=constants.DEFAULT_CHUNK_SIZE,
         )
 
-        parser.add_argument(
-            '--max-workers',
-            action='store',
-            dest='max_workers',
-            default=constants.MAX_WORKERS_DEFAULT,
-            help='specify the maximum number of workers to process the data'
-        )
-
     def handle(self, *args, **options):
         if not self.anonymize_enabled:
             self.stdout.write(self.style.WARNING('You must set ANONYMIZE_ENABLED to True'))
             exit()
 
         try:
-            modules = autodiscover_module(constants.ANONYMIZER_MODULE_NAME, app_name=options.get('app'))
+            modules = autodiscover_module(ANONYMIZER_MODULE_NAME, app_name=options.get('app'))
         except HattoriException as e:
             self.stdout.write(self.style.ERROR(e))
             exit(1)
 
         total_replacements_count = 0
-        max_workers = options.get('max_workers')
 
         for module in modules:
             anonymizers = get_app_anonymizers(module, selected_models=options.get('models'))
+
             if len(anonymizers) == 0:
                 continue
 
@@ -69,9 +61,11 @@ class Command(BaseCommand):
                 anonymizer = getattr(module, anonymizer_class_name)()
                 # Start the anonymizing process
                 self.stdout.write('{}.{}:'.format(module.__package__, anonymizer.model.__name__))
-                num_fields, num_instances, total = anonymizer.run(options.get('batch_size'), max_workers=max_workers)
-                self.stdout.write(
-                    '- {} fields, {} model instances, {} total replacements'.format(num_fields, num_instances, total)
-                )
-                total_replacements_count += total
+                number_of_replaced_fields = anonymizer.run(options.get('batch_size'))
+                self.stdout.write('- {} fields, {} model instances, {} total replacements'.format(
+                    number_of_replaced_fields[0],
+                    number_of_replaced_fields[1],
+                    number_of_replaced_fields[2]
+                ))
+                total_replacements_count += number_of_replaced_fields[2]
         self.stdout.write(self.style.SUCCESS('DONE. Replaced {} values in total'.format(total_replacements_count)))
