@@ -69,11 +69,9 @@ class Command(BaseCommand):
                 anonymizer = getattr(module, anonymizer_class_name)()
                 # Start the anonymizing process
                 self.stdout.write('{}.{}:'.format(module.__package__, anonymizer.model.__name__))
-                number_of_replaced_fields = anonymizer.run(options.get('batch_size'), max_workers=max_workers)
-                self.stdout.write('- {} fields, {} model instances, {} total replacements'.format(
-                    number_of_replaced_fields[0],
-                    number_of_replaced_fields[1],
-                    number_of_replaced_fields[2]
-                ))
-                total_replacements_count += number_of_replaced_fields[2]
+                num_fields, num_instances, total = anonymizer.run(options.get('batch_size'), max_workers=max_workers)
+                self.stdout.write(
+                    '- {} fields, {} model instances, {} total replacements'.format(num_fields, num_instances, total)
+                )
+                total_replacements_count += total
         self.stdout.write(self.style.SUCCESS('DONE. Replaced {} values in total'.format(total_replacements_count)))

@@ -3,6 +3,7 @@
 import logging
 import concurrent.futures
 
+from django.forms import model_to_dict
 from tqdm import tqdm
 from six import string_types
 from django.conf import settings
@@ -19,11 +20,11 @@ except AttributeError:
 
 class BaseAnonymizer:
 
+    model = None
+    attributes = None
+
     def __init__(self):
-        try:
-            getattr(self, 'model')
-            getattr(self, 'attributes')
-        except AttributeError:
+        if not self.model or not self.attributes:
             logger.info('ERROR: Your anonymizer is missing the model or attributes definition!')
             exit(1)
 
@@ -34,7 +35,8 @@ class BaseAnonymizer:
         """
         return self.model.objects.all()
 
-    def get_allowed_value(self, replacer, model_instance, field_name):
+    @staticmethod
+    def get_allowed_value(replacer, model_instance, field_name):
         retval = replacer()
         max_length = model_instance._meta.get_field(field_name).max_length
         if max_length:
@@ -42,9 +44,7 @@ class BaseAnonymizer:
         return retval
 
     def _process_instances(self, instances, max_workers):
-        count_fields = 0
-        count_instances = 0
-        errors = 0
+        count_fields, count_instances, errors = 0, 0, 0
         progress_bar = tqdm(desc="Processing", total=instances.count())
         # enqueuing instances
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -53,13 +53,13 @@ class BaseAnonymizer:
             }
         # processing results
         for future in concurrent.futures.as_completed(future_ref):
-            # item_processed = future_ref[future]
             try:
-                data_result = future.result()
-            except Exception as exc:
+                model_instance, num_fields = future.result()
+            except Exception:
                 errors += 1
             else:
-                count_fields += data_result
+                model_instance.save()
+                count_fields += num_fields
                 count_instances += 1
             progress_bar.update(1)
         progress_bar.close()
@@ -76,10 +76,10 @@ class BaseAnonymizer:
                 raise TypeError('Replacers need to be callables or Strings!')
             setattr(model_instance, field_name, replaced_value)
             count_fields += 1
-        return count_fields
+        return model_instance, count_fields
 
     def run(self, batch_size, max_workers):
         instances = self.get_query_set()
         instances_processed, count_instances, count_fields = self._process_instances(instances, max_workers)
-        bulk_update(instances_processed, update_fields=[attrs[0] for attrs in self.attributes], batch_size=batch_size)
+        # bulk_update(instances_processed, update_fields=[attrs[0] for attrs in self.attributes], batch_size=batch_size)
         return len(self.attributes), count_instances, count_fields
