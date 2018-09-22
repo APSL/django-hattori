@@ -3,7 +3,6 @@
 import logging
 import concurrent.futures
 
-from django.forms import model_to_dict
 from tqdm import tqdm
 from six import string_types
 from django.conf import settings
@@ -36,12 +35,18 @@ class BaseAnonymizer:
         return self.model.objects.all()
 
     @staticmethod
-    def get_allowed_value(replacer, model_instance, field_name):
+    def _get_allowed_value(replacer, model_instance, field_name):
         retval = replacer()
         max_length = model_instance._meta.get_field(field_name).max_length
         if max_length:
             retval = retval[:max_length]
         return retval
+
+    def run(self, batch_size, max_workers):
+        instances = self.get_query_set()
+        instances_processed, count_instances, count_fields = self._process_instances(instances, max_workers)
+        bulk_update(instances_processed, update_fields=[attrs[0] for attrs in self.attributes], batch_size=batch_size)
+        return len(self.attributes), count_instances, count_fields
 
     def _process_instances(self, instances, max_workers):
         count_fields, count_instances, errors = 0, 0, 0
@@ -58,7 +63,7 @@ class BaseAnonymizer:
             except Exception:
                 errors += 1
             else:
-                model_instance.save()
+                # model_instance.save()
                 count_fields += num_fields
                 count_instances += 1
             progress_bar.update(1)
@@ -69,17 +74,12 @@ class BaseAnonymizer:
         count_fields = 0
         for field_name, replacer in self.attributes:
             if callable(replacer):
-                replaced_value = self.get_allowed_value(replacer, model_instance, field_name)
+                replaced_value = self._get_allowed_value(replacer, model_instance, field_name)
             elif isinstance(replacer, string_types):
                 replaced_value = replacer
             else:
                 raise TypeError('Replacers need to be callables or Strings!')
             setattr(model_instance, field_name, replaced_value)
             count_fields += 1
-        return model_instance, count_fields
 
-    def run(self, batch_size, max_workers):
-        instances = self.get_query_set()
-        instances_processed, count_instances, count_fields = self._process_instances(instances, max_workers)
-        # bulk_update(instances_processed, update_fields=[attrs[0] for attrs in self.attributes], batch_size=batch_size)
-        return len(self.attributes), count_instances, count_fields
+        return model_instance, count_fields
