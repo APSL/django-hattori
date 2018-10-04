@@ -1,3 +1,5 @@
+[![Downloads](https://pepy.tech/badge/django-hattori)](https://pepy.tech/project/django-hattori)
+
 # Django-Hattori
 
 Command to anonymize sensitive data. This app helps you anonymize data in a database used for development of a Django project.
