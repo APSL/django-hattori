@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import logging
 
 from tqdm import tqdm
@@ -6,6 +7,7 @@ from six import string_types
 from django.conf import settings
 from bulk_update.helper import bulk_update
 from faker import Faker
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +19,11 @@ except AttributeError:
 
 class BaseAnonymizer:
 
+    model = None
+    attributes = None
+
     def __init__(self):
-        try:
-            getattr(self, 'model')
-            getattr(self, 'attributes')
-        except AttributeError:
+        if not self.model or not self.attributes:
             logger.info('ERROR: Your anonymizer is missing the model or attributes definition!')
             exit(1)
 
@@ -32,12 +34,11 @@ class BaseAnonymizer:
         """
         return self.model.objects.all()
 
-    def get_allowed_value(self, replacer, model_instance, field_name):
-        retval = replacer()
-        max_length = model_instance._meta.get_field(field_name).max_length
-        if max_length:
-            retval = retval[:max_length]
-        return retval
+    def run(self, batch_size):
+        instances = self.get_query_set()
+        instances_processed, count_instances, count_fields = self._process_instances(instances)
+        bulk_update(instances_processed, update_fields=[attrs[0] for attrs in self.attributes], batch_size=batch_size)
+        return len(self.attributes), count_instances, count_fields
 
     def _process_instances(self, instances):
         count_fields = 0
@@ -59,12 +60,10 @@ class BaseAnonymizer:
         progress_bar.close()
         return instances, count_instances, count_fields
 
-    def run(self, batch_size):
-        instances = self.get_query_set()
-
-        instances_processed, count_instances, count_fields = self._process_instances(instances)
-
-        bulk_update(instances_processed, update_fields=[attrs[0] for attrs in self.attributes],
-                    batch_size=batch_size)
-
-        return len(self.attributes), count_instances, count_fields
+    @staticmethod
+    def get_allowed_value(replacer, model_instance, field_name):
+        retval = replacer()
+        max_length = model_instance._meta.get_field(field_name).max_length
+        if max_length:
+            retval = retval[:max_length]
+        return retval
