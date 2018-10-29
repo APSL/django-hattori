@@ -22,8 +22,8 @@ class TestCommand(object):
         assert last.first_name == 'first_name-10'
 
     @pytest.mark.parametrize('num_items', [
-        20000,
-        40000,
+        200,
+        300,
     ])
     def test_simple_command(self, num_items):
         self.data(num_items=num_items)
