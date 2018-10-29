@@ -19,3 +19,9 @@ Change log
 
 * Add progress bar that indicates the progress of the anonymization operation.
 
+
+0.2.0 (2018-10-28)
+------------------
+
+* Added tests
+* Small code refactors
