@@ -50,6 +50,7 @@ setup(
     url='https://github.com/APSL/django-hattori',
     packages=find_packages(exclude=['tests*']),
     description='Command to anonymize sensitive data.',
+    long_description_content_type="text/markdown",
     long_description=get_long_description(),
     install_requires=[
         'Django>=1.8',
