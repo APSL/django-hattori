@@ -40,13 +40,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not self.anonymize_enabled:
-            self.stdout.write(self.style.WARNING('You must set ANONYMIZE_ENABLED to True'))
+            self.stdout.write('You must set ANONYMIZE_ENABLED to True')
             exit()
 
         try:
             modules = autodiscover_module(constants.ANONYMIZER_MODULE_NAME, app_name=options.get('app'))
         except HattoriException as e:
-            self.stdout.write(self.style.ERROR(e))
+            self.stdout.write(str(e))
             exit(1)
 
         total_replacements_count = 0
@@ -65,4 +65,4 @@ class Command(BaseCommand):
                     '- {} fields, {} model instances, {} total replacements'.format(num_fields, num_instances, total)
                 )
                 total_replacements_count += total
-        self.stdout.write(self.style.SUCCESS('DONE. Replaced {} values in total'.format(total_replacements_count)))
+        self.stdout.write('DONE. Replaced {} values in total'.format(total_replacements_count))

@@ -8,7 +8,6 @@ from django.conf import settings
 from bulk_update.helper import bulk_update
 from faker import Faker
 
-
 logger = logging.getLogger(__name__)
 
 try:
@@ -18,7 +17,6 @@ except AttributeError:
 
 
 class BaseAnonymizer:
-
     model = None
     attributes = None
 
